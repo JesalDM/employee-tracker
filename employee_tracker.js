@@ -5,11 +5,32 @@ const Department = require("./Department");
 
 // inquirer question prompt - what do you want to do? (choices - add departments, add roles, add employees, view departments, view roles, view employees, update employee roles, exit)
 
+// function which prompts the user for what action they should take - presently assuming adding a department is the only option 
+function start(connection) {
+  inquirer
+  // prompt to ask the user about what action he wants to take
+    .prompt({
+        name: "action",
+        type: "list",
+        message: "What would you like to do?",
+        choices: ["Add Department", "Exit"]
+    })
+    .then(function(answer) {
+        // based on their answer, either add department or exit
+        if (answer.action === "Add Department") {
+            addDepartment(connection);
+        }
+        else{
+            connection.end();
+        }
+    });
+}
 
 // this function adds a new department to the departmment table in the database, based on user response
 function addDepartment(connection){
     // prompt to ask the user about the department that he wants to add
-    inquirer.prompt([
+  inquirer
+    .prompt([
         {
             type: "input",
             name: "name",
@@ -29,17 +50,23 @@ function addDepartment(connection){
         connection.query("INSERT INTO department SET ?",
             newDepartment,
             function(err) {
-                if (err) throw err;
-                console.log("The department was successfully added!");
+                if (err){
+                    // shpws a user friendly message to user
+                    console.log("Sorry! The department could not be added due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                } else {
+                    console.log("The department was successfully added!");
+                }
+                // restarts the question prompt
+                start(connection);
             }
         )
-        connection.end();
     });
 }
 
-// exporting the function to make it available in server.js
+// exporting the functions to make them available in server.js
 module.exports = {
-    addDepartment
+    addDepartment,
+    start
 };
 
 

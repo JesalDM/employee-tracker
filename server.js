@@ -14,5 +14,5 @@ const connection = mysql.createConnection({
 // connect/start the database connection
 connection.connect(function(err) {
   if (err) throw err;
-  employeeTracker.addDepartment(connection);
+  employeeTracker.start(connection);
 });
