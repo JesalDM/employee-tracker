@@ -1,9 +1,9 @@
-// Import the mysql and inquirer packages
-var mysql = require("mysql");
-var inquirer = require("inquirer");
+// Import the required packages and files
+const mysql = require("mysql");
+const employeeTracker = require("./employee_tracker")
 
 // Connect to the employee_trackerDB database using a localhost connection
-var connection = mysql.createConnection({
+const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
   user: "root",
@@ -14,5 +14,5 @@ var connection = mysql.createConnection({
 // connect/start the database connection
 connection.connect(function(err) {
   if (err) throw err;
-  console.log("connected as id " + connection.threadId + "\n")
+  employeeTracker.addDepartment(connection);
 });

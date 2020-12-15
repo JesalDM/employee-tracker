@@ -1,9 +1,49 @@
+// Importing the required packages and files
+const inquirer = require("inquirer");
+const Department = require("./Department");
+
+
 // inquirer question prompt - what do you want to do? (choices - add departments, add roles, add employees, view departments, view roles, view employees, update employee roles, exit)
 
-/* If add departments,then Inquirer prompt for additional question:
-    1. What is the name of the department that you want to add?
-    Do inquirer validations 
-    Take the response and insert the record in the Department table*/
+
+// this function adds a new department to the departmment table in the database, based on user response
+function addDepartment(connection){
+    // prompt to ask the user about the department that he wants to add
+    inquirer.prompt([
+        {
+            type: "input",
+            name: "name",
+            message: "What is the name of the department that you want to add?",
+            // validates that response is provided
+            validate: (answer) => {
+                if(answer = ""){
+                    return "Name is required";
+                }
+                return true;
+            }
+        }
+    ]).then((answers) => {
+        // creates new instance of Department using user response
+        const newDepartment = new Department(answers.name);
+        // SQL query to insert the new record in the department table in the database
+        connection.query("INSERT INTO department SET ?",
+            newDepartment,
+            function(err) {
+                if (err) throw err;
+                console.log("The department was successfully added!");
+            }
+        )
+        connection.end();
+    });
+}
+
+// exporting the function to make it available in server.js
+module.exports = {
+    addDepartment
+};
+
+
+
 
 /* If add roles, use SQL query to retrieve the department names from department table 
    Then ask additional inquirer questions:
