@@ -1,6 +1,7 @@
 // Importing the required packages and files
 const inquirer = require("inquirer");
-const Department = require("./Department");
+const Department = require("./model/Department");
+const Role = require("./model/Role");
 
 
 // inquirer question prompt - what do you want to do? (choices - add departments, add roles, add employees, view departments, view roles, view employees, update employee roles, exit)
@@ -13,14 +14,15 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Exit"]
+        choices: ["Add Department", "Add Role", "Exit"]
     })
     .then(function(answer) {
         // based on their answer, either add department or exit
         if (answer.action === "Add Department") {
             addDepartment(connection);
-        }
-        else{
+        } else if (answer.action === "Add Role") {
+            addRole(connection);
+        }else{
             connection.end();
         }
     });
@@ -63,9 +65,78 @@ function addDepartment(connection){
     });
 }
 
+// this function adds a new role to the role table in the database, based on user response
+function addRole(connection){
+  connection.query("Select * from department", function(err, results){
+    if (err) throw err;
+    // maps every row in the department table to an object that can be made available to inquirer choices
+    const departmentList = results.map((department)=> 
+        ({ value: department.id, name: department.name })
+    );
+    // prompts to ask the user about the role that he wants to add
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                name: "title",
+                message: "What is the new role title that you want to add?",
+                // validates that response is provided
+                validate: (answer) => {
+                    if(answer = ""){
+                        return "Role title is required";
+                    }
+                    return true;
+                }
+            },
+            {
+                type: "input",
+                name: "salary",
+                message: "What is the salary that an employee in this role would be paid?",
+                // validates that response is provided and is a positive number 
+                validate: (answer) => {
+                    if (answer === ""){
+                    return "Please enter a number greater than 0";
+                    }
+                    return true;
+                },
+                filter: answer => {
+                    if(Number.isNaN(answer) || Number(answer)<=0){
+                        return ""
+                    }
+                    return Number(answer);
+                }  
+            },
+            {
+                type: "list",
+                name: "department_id",
+                message: "Which department do you want to associate the role with?",
+                choices: departmentList
+            }
+        ]).then((answers) => {
+            // creates new instance of Department using user response
+            const newRole = new Role(answers.title, answers.salary, answers.department_id);
+            // SQL query to insert the new record in the department table in the database
+            connection.query("INSERT INTO role SET ?",
+                newRole,
+                function(err) {
+                    if (err){
+                        // shpws a user friendly message to user
+                        console.log("Sorry! The role could not be added due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                    } else {
+                        console.log("The role was successfully added!");
+                    }
+                    // restarts the question prompt
+                    start(connection);
+                }
+            )
+        });
+  });
+}
+
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
+    addRole,
     start
 };
 
