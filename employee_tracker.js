@@ -2,6 +2,7 @@
 const inquirer = require("inquirer");
 const Department = require("./model/Department");
 const Role = require("./model/Role");
+const Employee = require("./model/Employee");
 
 
 // inquirer question prompt - what do you want to do? (choices - add departments, add roles, add employees, view departments, view roles, view employees, update employee roles, exit)
@@ -14,16 +15,22 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "Exit"]
     })
     .then(function(answer) {
-        // based on their answer, either add department or exit
-        if (answer.action === "Add Department") {
-            addDepartment(connection);
-        } else if (answer.action === "Add Role") {
-            addRole(connection);
-        }else{
-            connection.end();
+        // based on the user answer, executes the corresponding function
+        switch(answer.action){
+            case "Add Department" :
+                addDepartment(connection);
+                break;
+            case "Add Role" :
+                addRole(connection);
+                break;
+            case "Add Employee" :
+                addEmployee(connection);
+                break;
+            default:
+                connection.end();     
         }
     });
 }
@@ -113,9 +120,9 @@ function addRole(connection){
                 choices: departmentList
             }
         ]).then((answers) => {
-            // creates new instance of Department using user response
+            // creates new instance of role using user response
             const newRole = new Role(answers.title, answers.salary, answers.department_id);
-            // SQL query to insert the new record in the department table in the database
+            // SQL query to insert the new record in the role table in the database
             connection.query("INSERT INTO role SET ?",
                 newRole,
                 function(err) {
@@ -133,37 +140,100 @@ function addRole(connection){
   });
 }
 
+// this function adds a new employee to the employee table in the database, based on user response
+function addEmployee(connection){
+    connection.query('Select CONCAT(first_name, " ", last_name) as full_name, id from employee', function(error, empResults){
+        if (error) throw error;
+        // maps every row in the employee table to an object that can be made available to inquirer choices
+        const managerList = empResults.map(manager=>
+            ({ value: manager.id, name: manager.full_name})
+        );
+        console.log(managerList);
+        connection.query('Select CONCAT(role.title, "-", department.name) as role_department, role.id from role left join department on role.department_id = department.id', function(err, results){
+            if (err) throw err;
+            // maps every row in the role table to an object that can be made available to inquirer choices
+            const roleList = results.map(role=> 
+                ({ value: role.id, name: role.role_department })
+            );
+            // prompts to ask the user about the new employee that he wants to add
+            inquirer
+            .prompt([
+                {
+                    type: "input",
+                    name: "first_name",
+                    message: "What is the first name of the new employee?",
+                    // validates that response is provided
+                    validate: (answer) => {
+                        if(answer = ""){
+                            return "Employee first name is required";
+                        }
+                        return true;
+                    }
+                },
+                {
+                    type: "input",
+                    name: "last_name",
+                    message: "What is the last name of the new employee?",
+                    // validates that response is provided
+                    validate: (answer) => {
+                        if(answer = ""){
+                            return "Employee last name is required";
+                        }
+                        return true;
+                    }
+                },
+                {
+                    type: "list",
+                    name: "role_id",
+                    message: "What is the role of this employee?",
+                    choices: roleList
+                },
+                {
+                    type: "confirm",
+                    name: "hasManager",
+                    message: "Does this employee have a manager?"
+                },
+                {
+                    type: "list",
+                    name: "manager_id",
+                    message: "Who is the manager of this employee?",
+                    when: answer => {
+                        return answer.hasManager === false && managerList.length !== 0;
+                    },
+                    choices: managerList
+                }
+            ]).then((answers) => {
+                console.log(managerList);
+                // creates new instance of employee using user response
+                const newEmployee = new Employee(answers.first_name, answers.last_name, answers.role_id, answers.manager_id);
+                // SQL query to insert the new record in the employee table in the database
+                connection.query("INSERT INTO employee SET ?",
+                    newEmployee,
+                    function(err) {
+                        if (err){
+                            // shpws a user friendly message to user
+                            console.log("Sorry! The employee could not be added due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                        } else {
+                            console.log("The employee was successfully added!");
+                        }
+                        // restarts the question prompt
+                        start(connection);
+                    }
+                )
+            });
+        });
+    });
+  }
+
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
     addRole,
+    addEmployee,
     start
 };
+   
 
-
-
-
-/* If add roles, use SQL query to retrieve the department names from department table 
-   Then ask additional inquirer questions:
-    1. What is the title of the role that you want to add?
-    2. Which department does the role belong to? (choices retrieved using sql query before the questions)
-    3. What is the salary that an employee in this role would be paid?
-    Do inquirer validations 
-    Using SQL query, get the department id from the department table based on the user provided department name
-    Take the response and insert the record in the Roles table*/
-
-    
-/* If add employees, use SQL query to retrieve the role titles and managers from roles table 
-   Then ask additional inquirer questions:
-    1. What is the first name of the employee?
-    2. What is the last name of the employee?
-    3. What is the role title of the employee? [choices]
-    4. Is this employee a manager? [choices - Yes, No]
-    5. (if yes) Who is the manager of this employee? [choices]
-    Do inquirer validations
-    Using SQL query, get the role id from the role table based on the user provided role title
-    Using SQL query, get the manager id from the employees table based on the user provided name of the Manager
-    Take the response and insert the record in the Employees table*/
 
 /* If view departments, use sql query to console.table the departments table*/
 
