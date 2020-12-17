@@ -262,7 +262,7 @@ function viewRoles(connection){
 // this function allows the user to retrieve and view all the existing employees from the employee table in the database
 function viewEmployees(connection){
     // SQL JOINS used to retreive the fields from the employee, role and department table in the database
-    connection.query("SELECT e.id, e.first_name, e.last_name, r.title AS role, d.name AS department, r.salary FROM employee AS e INNER JOIN role AS r ON e.role_id = r.id INNER JOIN department AS d ON r.department_id = d.id", 
+    connection.query('SELECT e.id, e.first_name, e.last_name, r.title AS role, d.name AS department, r.salary, CONCAT(m.first_name, " ", m.last_name) as manager FROM employee AS e INNER JOIN role AS r ON e.role_id = r.id INNER JOIN department AS d ON r.department_id = d.id LEFT JOIN employee AS m ON e.manager_id = m.id', 
         function(err, results) {
             if (err) throw err;
             console.table(results);
