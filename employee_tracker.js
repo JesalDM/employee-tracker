@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -35,7 +35,10 @@ function start(connection) {
                 break;
             case "View Roles" :
                 viewRoles(connection);
-                break; 
+                break;
+            case "View Employees" :
+                viewEmployees(connection);
+                break;
             default:
                 connection.end();     
         }
@@ -237,7 +240,7 @@ function addEmployee(connection){
 // this function allows the user to retrieve and view all the existing departments from the department table in the database
 function viewDepartments(connection){
     // SQL query to retreive all the fields from the department table in the database
-    connection.query("Select * from department", function(err, results) {
+    connection.query("Select id, name AS department from department", function(err, results) {
         if (err) throw err;
         console.table(results);
         // restarts the question prompt
@@ -247,13 +250,26 @@ function viewDepartments(connection){
 
 // this function allows the user to retrieve and view all the existing roles from the role table in the database
 function viewRoles(connection){
-    // SQL query to retreive all the fields from the role table in the database
-    connection.query("Select * from role", function(err, results) {
+    // SQL JOINs used to retreive the fields from the role and department table in the database
+    connection.query("SELECT r.id, r.title as role, d.name AS department, r.salary FROM role AS r INNER JOIN department AS d on r.department_id = d.id", function(err, results) {
         if (err) throw err;
         console.table(results);
         // restarts the question prompt
         start(connection);
     });
+}
+
+// this function allows the user to retrieve and view all the existing employees from the employee table in the database
+function viewEmployees(connection){
+    // SQL JOINS used to retreive the fields from the employee, role and department table in the database
+    connection.query("SELECT e.id, e.first_name, e.last_name, r.title AS role, d.name AS department, r.salary FROM employee AS e INNER JOIN role AS r ON e.role_id = r.id INNER JOIN department AS d ON r.department_id = d.id", 
+        function(err, results) {
+            if (err) throw err;
+            console.table(results);
+            // restarts the question prompt
+            start(connection);
+        }
+    );
 }
 
 // exporting the functions to make them available in server.js
@@ -263,10 +279,9 @@ module.exports = {
     addEmployee,
     viewDepartments,
     viewRoles,
+    viewEmployees,
     start
 };
-
-/* If view employees, use sql query to console.table the employees table*/
 
 /* If update employee roles, use SQL query to retrieve the role, employee and manager names from employees table.
     Then ask additional inquirer questions:
