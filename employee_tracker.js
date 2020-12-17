@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -33,6 +33,9 @@ function start(connection) {
             case "View Departments" :
                 viewDepartments(connection);
                 break;
+            case "View Roles" :
+                viewRoles(connection);
+                break; 
             default:
                 connection.end();     
         }
@@ -152,7 +155,6 @@ function addEmployee(connection){
         const managerList = empResults.map(manager=>
             ({ value: manager.id, name: manager.full_name})
         );
-        console.log(managerList);
         connection.query('Select CONCAT(role.title, "-", department.name) as role_department, role.id from role left join department on role.department_id = department.id', function(err, results){
             if (err) throw err;
             // maps every row in the role table to an object that can be made available to inquirer choices
@@ -190,6 +192,7 @@ function addEmployee(connection){
                     type: "list",
                     name: "role_id",
                     message: "What is the role of this employee?",
+                    // lists all the existing roles along with the department the role is associated with, for the user to be able to select the role of this employee
                     choices: roleList
                 },
                 {
@@ -201,9 +204,11 @@ function addEmployee(connection){
                     type: "list",
                     name: "manager_id",
                     message: "Who is the manager of this employee?",
+                    // question asked only if the employee has a manager and if there is at least one existing employee in the employee table in the database who could be assigned as the manager
                     when: answer => {
                         return answer.hasManager === false && managerList.length !== 0;
                     },
+                    // lists all the existing employees for the user to be able to select the manager for the new employee
                     choices: managerList
                 }
             ]).then((answers) => {
@@ -215,7 +220,7 @@ function addEmployee(connection){
                     newEmployee,
                     function(err) {
                         if (err){
-                            // shpws a user friendly message to user
+                            // shows a user friendly message to user
                             console.log("Sorry! The employee could not be added due to some problem. Please try again!\nError Details: ", err.sqlMessage);
                         } else {
                             console.log("The employee was successfully added!");
@@ -229,15 +234,26 @@ function addEmployee(connection){
     });
 }
 
+// this function allows the user to retrieve and view all the existing departments from the department table in the database
 function viewDepartments(connection){
-    // SQL query to insert the new record in the department table in the database
+    // SQL query to retreive all the fields from the department table in the database
     connection.query("Select * from department", function(err, results) {
-            if (err) throw err;
-            console.table(results);
-            // restarts the question prompt
-            start(connection);
-        }
-    )
+        if (err) throw err;
+        console.table(results);
+        // restarts the question prompt
+        start(connection);
+    });
+}
+
+// this function allows the user to retrieve and view all the existing roles from the role table in the database
+function viewRoles(connection){
+    // SQL query to retreive all the fields from the role table in the database
+    connection.query("Select * from role", function(err, results) {
+        if (err) throw err;
+        console.table(results);
+        // restarts the question prompt
+        start(connection);
+    });
 }
 
 // exporting the functions to make them available in server.js
@@ -246,12 +262,9 @@ module.exports = {
     addRole,
     addEmployee,
     viewDepartments,
+    viewRoles,
     start
 };
-   
-/* If view departments, use sql query to console.table the departments table*/
-
-/* If view roles, use sql query to console.table the roles table*/
 
 /* If view employees, use sql query to console.table the employees table*/
 
