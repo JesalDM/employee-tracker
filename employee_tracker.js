@@ -1,5 +1,6 @@
 // Importing the required packages and files
 const inquirer = require("inquirer");
+const cTable = require("console.table");
 const Department = require("./model/Department");
 const Role = require("./model/Role");
 const Employee = require("./model/Employee");
@@ -15,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -28,6 +29,9 @@ function start(connection) {
                 break;
             case "Add Employee" :
                 addEmployee(connection);
+                break;
+            case "View Departments" :
+                viewDepartments(connection);
                 break;
             default:
                 connection.end();     
@@ -223,18 +227,28 @@ function addEmployee(connection){
             });
         });
     });
-  }
+}
+
+function viewDepartments(connection){
+    // SQL query to insert the new record in the department table in the database
+    connection.query("Select * from department", function(err, results) {
+            if (err) throw err;
+            console.table(results);
+            // restarts the question prompt
+            start(connection);
+        }
+    )
+}
 
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
     addRole,
     addEmployee,
+    viewDepartments,
     start
 };
    
-
-
 /* If view departments, use sql query to console.table the departments table*/
 
 /* If view roles, use sql query to console.table the roles table*/
