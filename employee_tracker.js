@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -38,6 +38,9 @@ function start(connection) {
                 break;
             case "View Employees" :
                 viewEmployees(connection);
+                break;
+            case "Update an Employee's Role" :
+                updateEmployeeRole(connection);
                 break;
             default:
                 connection.end();     
@@ -215,7 +218,6 @@ function addEmployee(connection){
                     choices: managerList
                 }
             ]).then((answers) => {
-                console.log(managerList);
                 // creates new instance of employee using user response
                 const newEmployee = new Employee(answers.first_name, answers.last_name, answers.role_id, answers.manager_id);
                 // SQL query to insert the new record in the employee table in the database
@@ -272,6 +274,63 @@ function viewEmployees(connection){
     );
 }
 
+// this function allows the user to update an employees role in the database
+function updateEmployeeRole(connection){
+    connection.query('SELECT CONCAT(e.first_name, " ", e.last_name) AS employee_name, e.id FROM employee AS e', function(error, results){
+        if (error) throw error;
+            // maps every row in the role table to an object that can be made available to inquirer choices
+        const employeeList = results.map(employee=> 
+            ({ value: employee.id, name: employee.employee_name })
+        );
+        connection.query('SELECT CONCAT(role.title, "-", department.name) AS role_department, role.id FROM role LEFT JOIN department ON role.department_id = department.id', function(err, results){
+            if (err) throw err;
+            // maps every row in the role table to an object that can be made available to inquirer choices
+            const roleList = results.map(role=> 
+                ({ value: role.id, name: role.role_department })
+            );
+            // prompts to ask the user about the employee and the new role that he wants to update his record with
+            inquirer
+            .prompt([
+                {
+                    type: "list",
+                    name: "employee_name",
+                    message: "Which employee's role you want to update?",
+                    // lists all the existing employees from the database
+                    choices: employeeList
+                },
+                {
+                    type: "list",
+                    name: "role_id",
+                    message: "What is the new role of this employee?",
+                    // lists all the existing roles along with the department the role is associated with, for the user to be able to select the role of this employee
+                    choices: roleList
+                },
+            ]).then((answers) => {
+                // SQL query to update this employee's record in the employee table in the database
+                connection.query("UPDATE employee SET ? WHERE ?",
+                    [
+                        {
+                            role_id: answers.role_id
+                        },
+                        {
+                            id: answers.employee_name
+                        }
+                    ],
+                    function(err) {
+                        if (err){
+                            // shows a user friendly message to user
+                            console.log("Sorry! This employee's role could not be updated due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                        } else {
+                            console.log("This employee's role was successfully updated!");
+                        }
+                        // restarts the question prompt
+                        start(connection);
+                    }
+                )
+            });
+        });
+    });
+}
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
@@ -280,19 +339,10 @@ module.exports = {
     viewDepartments,
     viewRoles,
     viewEmployees,
+    updateEmployeeRole,
     start
 };
 
-/* If update employee roles, use SQL query to retrieve the role, employee and manager names from employees table.
-    Then ask additional inquirer questions:
-    1. Which employee's role you want to update? [choices]
-    2. What is the new role title of this employee? [choices]
-    3. Do you want to update the manager of this employee as well? (choices - Yes, No)
-    4. (If yes) Who is the new manager of this employee?
-    Do inquirer validations if needed
-        Using SQL query, get the role id from the role table based on the user provided employee name
-        Using SQL query, get the manager id from the employees table based on the user provided name of the Manager
-        Take the response and update the record in the Employees table*/
 
 /* If update employee manager, use SQL query to retrieve employee and manager names from employees table.
     Then ask additional inquirer questions:
