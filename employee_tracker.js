@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Delete Department", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -41,6 +41,9 @@ function start(connection) {
                 break;
             case "Update an Employee's Role" :
                 updateEmployeeRole(connection);
+                break;
+            case "Delete Department" :
+                deleteDepartment(connection);
                 break;
             default:
                 connection.end();     
@@ -331,6 +334,37 @@ function updateEmployeeRole(connection){
         });
     });
 }
+
+// this function deletes a department from the department table in the database
+function deleteDepartment(connection){
+    connection.query("SELECT id, name FROM department", function(err, results){
+        if (err) throw err;
+        const departmentList = results.map(department => 
+            ({value: department.id, name: department.name})
+        );
+        inquirer.prompt([
+            {
+                name: "name",
+                type: "list",
+                message: "Which department do you want to delete?",
+                // lists all the existing departments in the database
+                choices: departmentList
+            }
+        ]).then (answer => {
+            // SQL query to delete the user entered department from the department table in the database
+            connection.query(`DELETE from department WHERE id = ${answer.name}`, function(err, results){
+                if (err) {
+                    console.log("Sorry! The department could not be deleted due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                } else {
+                    console.log("The department was successfully deleted!");
+                }
+                // restarts the question prompt
+                start(connection);
+            })
+                
+        });
+    })
+}
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
@@ -340,6 +374,7 @@ module.exports = {
     viewRoles,
     viewEmployees,
     updateEmployeeRole,
+    deleteDepartment,
     start
 };
 
@@ -355,9 +390,6 @@ module.exports = {
 
 /* If view employees by manager, use sql query to console.table the employees table grouped by manager_id/name?*/
 
-/* If delete departments, additional inquirer questions:
-    1. Which department do you want to delete? [choices - retrieved first using SQL query]
-    Based on the response, use SQL delete query to delete the corresponding record from the departments table. What about that department mapped to the role table?
 
  /* If delete roles, additional inquirer questions:
     1. Which role title do you want to delete? [choices - retrieved first using SQL query]
