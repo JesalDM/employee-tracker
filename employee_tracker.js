@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Delete Department", "Delete Role", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Delete Department", "Delete Role", "Delete an Employee", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -47,6 +47,9 @@ function start(connection) {
                 break;
             case "Delete Role" :
                 deleteRole(connection);
+                break;
+            case "Delete an Employee" :
+                deleteEmployee(connection);
                 break;
             default:
                 connection.end();     
@@ -399,6 +402,37 @@ function deleteRole(connection){
         });
     })
 }
+
+// this function removes an employee from the employee table in the database
+function deleteEmployee(connection){
+    connection.query('SELECT e.id, CONCAT(e.first_name, " ", e.last_name) AS employee_name FROM employee AS e', function(err, results){
+        if (err) throw err;
+        const employeeList = results.map(employee => 
+            ({value: employee.id, name: employee.employee_name})
+        );
+        inquirer.prompt([
+            {
+                name: "employee_name",
+                type: "list",
+                message: "Which employee do you want to delete?",
+                // lists all the existing employees in the database
+                choices: employeeList
+            }
+        ]).then (answer => {
+            // SQL query to delete the user entered employee from the employee table in the database
+            connection.query(`DELETE from employee WHERE id = ${answer.employee_name}`, function(err, results){
+                if (err) {
+                    console.log("Sorry! The employee could not be removed due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                } else {
+                    console.log("The employee was successfully removed!");
+                }
+                // restarts the question prompt
+                start(connection);
+            })
+                
+        });
+    })
+}
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
@@ -410,6 +444,7 @@ module.exports = {
     updateEmployeeRole,
     deleteDepartment,
     deleteRole,
+    deleteEmployee,
     start
 };
 
