@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Delete Department", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Delete Department", "Delete Role", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -44,6 +44,9 @@ function start(connection) {
                 break;
             case "Delete Department" :
                 deleteDepartment(connection);
+                break;
+            case "Delete Role" :
+                deleteRole(connection);
                 break;
             default:
                 connection.end();     
@@ -365,6 +368,37 @@ function deleteDepartment(connection){
         });
     })
 }
+
+// this function deletes a role from the role table in the database
+function deleteRole(connection){
+    connection.query('SELECT CONCAT(role.title, "-", department.name) AS role_department, role.id FROM role LEFT JOIN department ON role.department_id = department.id',function(err, results){
+        if (err) throw err;
+        const roleList = results.map(role => 
+            ({value: role.id, name: role.role_department})
+        );
+        inquirer.prompt([
+            {
+                name: "title",
+                type: "list",
+                message: "Which role do you want to delete?",
+                // lists all the existing roles along with the corresponding departments in the database
+                choices: roleList
+            }
+        ]).then (answer => {
+            // SQL query to delete the user entered role from the role table in the database
+            connection.query(`DELETE from role WHERE id = ${answer.title}`, function(err, results){
+                if (err) {
+                    console.log("Sorry! The role could not be deleted due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                } else {
+                    console.log("The role was successfully deleted!");
+                }
+                // restarts the question prompt
+                start(connection);
+            })
+                
+        });
+    })
+}
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
@@ -375,6 +409,7 @@ module.exports = {
     viewEmployees,
     updateEmployeeRole,
     deleteDepartment,
+    deleteRole,
     start
 };
 
@@ -390,10 +425,6 @@ module.exports = {
 
 /* If view employees by manager, use sql query to console.table the employees table grouped by manager_id/name?*/
 
-
- /* If delete roles, additional inquirer questions:
-    1. Which role title do you want to delete? [choices - retrieved first using SQL query]
-    Based on the response, use SQL delete query to delete the corresponding record from the roles table. What about that role mapped to the employee table?
 
  /* If delete employees, additional inquirer questions:
     1. Which employee do you want to delete? [choices - retrieved first using SQL query]
