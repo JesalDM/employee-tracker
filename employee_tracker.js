@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Delete Department", "Delete Role", "Delete an Employee", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Update an Employee's Manager","Delete Department", "Delete Role", "Delete an Employee", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -41,6 +41,9 @@ function start(connection) {
                 break;
             case "Update an Employee's Role" :
                 updateEmployeeRole(connection);
+                break;
+            case "Update an Employee's Manager" :
+                updateEmployeeManager(connection);
                 break;
             case "Delete Department" :
                 deleteDepartment(connection);
@@ -341,6 +344,62 @@ function updateEmployeeRole(connection){
     });
 }
 
+// this function allows the user to update an employee's manager in the database
+function updateEmployeeManager(connection){
+    connection.query('SELECT CONCAT(e.first_name, " ", e.last_name) AS employee_name, e.id, e.manager_id FROM employee AS e LEFT JOIN employee as m on e.manager_id = m.id', function(error, results){
+        if (error) throw error;
+            // maps every row in the result set to an object that can be made available to inquirer choices
+        const managerList = results.map(manager=> 
+            ({ value: manager.id, name: manager.employee_name })
+        );
+        const employeeList = results.map(employee => 
+            ({ value: employee.id, name: employee.employee_name})
+        );
+        // prompts to ask the user about the employee who's manager he wants to update
+        inquirer
+        .prompt([
+            {
+                type: "list",
+                name: "employee",
+                message: "Which employee's manager you want to update?",
+                // lists all the existing employees from the database
+                choices: employeeList
+            },
+            {
+                type: "list",
+                name: "manager",
+                message: "Who is the new manager of this employee?",
+                // lists all the existing employees for the user to be able to select the manager
+                choices: managerList
+            },
+            
+        ]).then((answers) => {
+            console.log(answers);
+            // SQL query to update this employee's manager in the employee table in the database
+            connection.query("UPDATE employee SET ? WHERE ?",
+                [
+                    {
+                        manager_id: answers.manager
+                    },
+                    {
+                        id: answers.employee
+                    }
+                ],
+                function(err) {
+                    if (err){
+                        // shows a user friendly message to user
+                        console.log("Sorry! This employee's manager could not be updated due to some problem. Please try again!\nError Details: ", err.sqlMessage);
+                    } else {
+                        console.log("This employee's manager was successfully updated!");
+                    }
+                    // restarts the question prompt
+                    start(connection);
+                }
+            )
+        });
+    });
+};
+
 // this function deletes a department from the department table in the database
 function deleteDepartment(connection){
     connection.query("SELECT id, name FROM department", function(err, results){
@@ -442,6 +501,7 @@ module.exports = {
     viewRoles,
     viewEmployees,
     updateEmployeeRole,
+    updateEmployeeManager,
     deleteDepartment,
     deleteRole,
     deleteEmployee,
