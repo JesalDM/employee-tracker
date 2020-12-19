@@ -16,7 +16,7 @@ function start(connection) {
         name: "action",
         type: "list",
         message: "What would you like to do?",
-        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Update an Employee's Manager","Delete Department", "Delete Role", "Delete an Employee", "Exit"]
+        choices: ["Add Department", "Add Role", "Add Employee", "View Departments", "View Roles", "View Employees", "Update an Employee's Role", "Update an Employee's Manager", "View Employees by Manager", "Delete Department", "Delete Role", "Delete an Employee", "Exit"]
     })
     .then(function(answer) {
         // based on the user answer, executes the corresponding function
@@ -44,6 +44,9 @@ function start(connection) {
                 break;
             case "Update an Employee's Manager" :
                 updateEmployeeManager(connection);
+                break;
+            case "View Employees by Manager" :
+                viewEmployeesByManager(connection);
                 break;
             case "Delete Department" :
                 deleteDepartment(connection);
@@ -400,6 +403,34 @@ function updateEmployeeManager(connection){
     });
 };
 
+// this function allows the user to view the employees by managers
+function viewEmployeesByManager(connection){
+    // SQL query to retrieve all the managers 
+    connection.query('SELECT CONCAT(e.first_name, " ", e.last_name) as manager, e.id FROM employee AS e WHERE e.id IN (SELECT DISTINCT manager_id FROM employee)', function(err, results){
+        if (err) throw err;
+        const managerList = results.map(manager => 
+            ({value:manager.id, name: manager.manager})
+        );
+        // prompt to ask the user about the manager whose employees he would like to view
+        inquirer.prompt([
+            {
+                name:"manager",
+                type:"list",
+                message: "Which manager's employees do you want to view?",
+                choices: managerList
+            }
+        ]).then(answer =>{
+            // SQL query to retreive all the employees that report to the user entered manager
+            connection.query(`SELECT CONCAT(m.first_name, " ", m.last_name) as manager, CONCAT(e.first_name, " ", e.last_name) as employees FROM employee AS e INNER JOIN employee AS m on e.manager_id = m.id WHERE e.manager_id = ${answer.manager}`, function(err, results) {
+                if (err) throw err;
+                console.table(results);
+                // restarts the question prompt
+                start(connection);
+            });
+        })
+    });
+}
+
 // this function deletes a department from the department table in the database
 function deleteDepartment(connection){
     connection.query("SELECT id, name FROM department", function(err, results){
@@ -502,6 +533,7 @@ module.exports = {
     viewEmployees,
     updateEmployeeRole,
     updateEmployeeManager,
+    viewEmployeesByManager,
     deleteDepartment,
     deleteRole,
     deleteEmployee,
