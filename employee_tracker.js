@@ -5,11 +5,9 @@ const Department = require("./model/Department");
 const Role = require("./model/Role");
 const Employee = require("./model/Employee");
 
-
-// inquirer question prompt - what do you want to do? (choices - add departments, add roles, add employees, view departments, view roles, view employees, update employee roles, exit)
-
 // function which prompts the user for what action they should take - presently assuming adding a department is the only option 
 function start(connection) {
+  console.log
   inquirer
   // prompt to ask the user about what action he wants to take
     .prompt({
@@ -523,6 +521,7 @@ function deleteEmployee(connection){
         });
     })
 }
+
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
@@ -539,23 +538,6 @@ module.exports = {
     deleteEmployee,
     start
 };
-
-
-/* If update employee manager, use SQL query to retrieve employee and manager names from employees table.
-    Then ask additional inquirer questions:
-    1. Which employee's manager you want to update.[choices]
-    2. Who is the new manager of this employee? [choices]
-    Do inquirer validations if needed.
-        Using SQL query, get the employee id from the employees table based on the user provided employee name
-        Using SQL query, get the manager id from the employees table based on the user provided name of the Manager
-        Take the response and update the record in the Employees table*/
-
-/* If view employees by manager, use sql query to console.table the employees table grouped by manager_id/name?*/
-
-
- /* If delete employees, additional inquirer questions:
-    1. Which employee do you want to delete? [choices - retrieved first using SQL query]
-    Based on the response, use SQL delete query to delete the corresponding record from the employees table. 
 
 /* View budget of a department, additional inquirer questions:
     1. For which department do you want to view the utilized budget?
