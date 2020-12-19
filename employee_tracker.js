@@ -522,6 +522,9 @@ function deleteEmployee(connection){
     })
 }
 
+
+
+
 // exporting the functions to make them available in server.js
 module.exports = {
     addDepartment,
@@ -539,6 +542,3 @@ module.exports = {
     start
 };
 
-/* View budget of a department, additional inquirer questions:
-    1. For which department do you want to view the utilized budget?
-    Based on the response, use SQL JOINs to join role, department and employees tables and utilize aggregate functions to add the salaries of all employees belonging to a department*/
