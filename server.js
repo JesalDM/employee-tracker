@@ -8,14 +8,14 @@ const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
   user: "root",
-  password: process.env.password,
+  password: process.env.PASSWORD,
   database: "employee_trackerDB"
 });
 
 // connect/start the database connection
 connection.connect(function(err) {
   if (err) throw err;
-  CFonts.say('Employee Tracker', {
+  CFonts.say('Employee\nTracker', {
     font: 'block',              // define the font face
     align: 'left',              // define text alignment
     colors: ['system'],         // define all colors

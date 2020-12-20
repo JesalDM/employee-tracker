@@ -68,3 +68,7 @@ This project is licensed under the terms of the MIT license.
 
 ## For Review
 * Github Repository URL: https://github.com/JesalDM/employee-tracker
+* Walkthrough video: ![Application-Demo](./assets/employee_tracker_demo.gif)
+* Screenshot : 
+    - ![Screenshot1](./assets/employee_tracker_screenshot1.png)
+    - ![Screenshot2](./assets/employee_tracker_screenshot2.png)
