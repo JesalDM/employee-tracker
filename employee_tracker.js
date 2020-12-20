@@ -72,7 +72,7 @@ function addDepartment(connection){
             message: "What is the name of the department that you want to add?",
             // validates that response is provided
             validate: (answer) => {
-                if(answer = ""){
+                if(answer === ""){
                     return "Name is required";
                 }
                 return true;
@@ -115,7 +115,7 @@ function addRole(connection){
                 message: "What is the new role title that you want to add?",
                 // validates that response is provided
                 validate: (answer) => {
-                    if(answer = ""){
+                    if(answer === ""){
                         return "Role title is required";
                     }
                     return true;
@@ -189,7 +189,7 @@ function addEmployee(connection){
                     message: "What is the first name of the new employee?",
                     // validates that response is provided
                     validate: (answer) => {
-                        if(answer = ""){
+                        if(answer === ""){
                             return "Employee first name is required";
                         }
                         return true;
@@ -201,7 +201,7 @@ function addEmployee(connection){
                     message: "What is the last name of the new employee?",
                     // validates that response is provided
                     validate: (answer) => {
-                        if(answer = ""){
+                        if(answer === ""){
                             return "Employee last name is required";
                         }
                         return true;
@@ -217,7 +217,7 @@ function addEmployee(connection){
                 {
                     type: "confirm",
                     name: "hasManager",
-                    message: "Does this employee have a manager?"
+                    message: "Does this employee have a manager?"             
                 },
                 {
                     type: "list",
@@ -225,7 +225,7 @@ function addEmployee(connection){
                     message: "Who is the manager of this employee?",
                     // question asked only if the employee has a manager and if there is at least one existing employee in the employee table in the database who could be assigned as the manager
                     when: answer => {
-                        return answer.hasManager === false && managerList.length !== 0;
+                        return answer.hasManager === true && managerList.length !== 0;
                     },
                     // lists all the existing employees for the user to be able to select the manager for the new employee
                     choices: managerList
@@ -255,7 +255,7 @@ function addEmployee(connection){
 // this function allows the user to retrieve and view all the existing departments from the department table in the database
 function viewDepartments(connection){
     // SQL query to retreive all the fields from the department table in the database
-    connection.query("Select id, name AS department from department", function(err, results) {
+    connection.query("Select id, name AS department from department ORDER BY id", function(err, results) {
         if (err) throw err;
         console.table(results);
         // restarts the question prompt
@@ -266,7 +266,7 @@ function viewDepartments(connection){
 // this function allows the user to retrieve and view all the existing roles from the role table in the database
 function viewRoles(connection){
     // SQL JOINs used to retreive the fields from the role and department table in the database
-    connection.query("SELECT r.id, r.title as role, d.name AS department, r.salary FROM role AS r INNER JOIN department AS d on r.department_id = d.id", function(err, results) {
+    connection.query("SELECT r.id, r.title as role, d.name AS department, r.salary FROM role AS r INNER JOIN department AS d on r.department_id = d.id ORDER BY r.id", function(err, results) {
         if (err) throw err;
         console.table(results);
         // restarts the question prompt
@@ -277,7 +277,7 @@ function viewRoles(connection){
 // this function allows the user to retrieve and view all the existing employees from the employee table in the database
 function viewEmployees(connection){
     // SQL JOINS used to retreive the fields from the employee, role and department table in the database
-    connection.query('SELECT e.id, e.first_name, e.last_name, r.title AS role, d.name AS department, r.salary, CONCAT(m.first_name, " ", m.last_name) as manager FROM employee AS e INNER JOIN role AS r ON e.role_id = r.id INNER JOIN department AS d ON r.department_id = d.id LEFT JOIN employee AS m ON e.manager_id = m.id', 
+    connection.query('SELECT e.id, e.first_name, e.last_name, r.title AS role, d.name AS department, r.salary, CONCAT(m.first_name, " ", m.last_name) as manager FROM employee AS e INNER JOIN role AS r ON e.role_id = r.id INNER JOIN department AS d ON r.department_id = d.id LEFT JOIN employee AS m ON e.manager_id = m.id ORDER BY e.id', 
         function(err, results) {
             if (err) throw err;
             console.table(results);
@@ -375,7 +375,6 @@ function updateEmployeeManager(connection){
             },
             
         ]).then((answers) => {
-            console.log(answers);
             // SQL query to update this employee's manager in the employee table in the database
             connection.query("UPDATE employee SET ? WHERE ?",
                 [
